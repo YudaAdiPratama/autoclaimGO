@@ -28,7 +28,7 @@ func main() {
 	api.SetSigner(keyBag)
 
 	// List of accounts to claim rewards for
-	accounts := []string{"A", "B", "C"}
+	accounts := []string{"a", "b", "c"}
 
 	// Create a channel to listen for interrupt signals
 	signalChan := make(chan os.Signal, 1)
@@ -88,6 +88,15 @@ func claimReward(api *vex.API, ctx context.Context, account string) { // Updated
 		fmt.Printf("Error signing transaction: %v\n", err)
 		return
 	}
+
+	// Print signed transaction for debugging
+	content, err := json.MarshalIndent(signedTx, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshalling transaction: %v\n", err)
+		return
+	}
+	fmt.Println("Signed Transaction")
+	fmt.Println(string(content))
 
 	// Push the transaction to the blockchain
 	response, err := api.PushTransaction(ctx, packedTx)
