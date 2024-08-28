@@ -95,8 +95,7 @@ func claimReward(api *vex.API, ctx context.Context, account string) { // Updated
 		fmt.Printf("Error marshalling transaction: %v\n", err)
 		return
 	}
-	fmt.Println("Signed Transaction:")
-	fmt.Println(string(content))
+	fmt.Println("try Signed Transaction")
 
 	// Push the transaction to the blockchain
 	response, err := api.PushTransaction(ctx, packedTx)
