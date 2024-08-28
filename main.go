@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
 	"time"
 
 	vex "github.com/genesisblockid/vex-go"
+	"syscall"
 )
 
 func main() {
@@ -15,7 +18,7 @@ func main() {
 	ctx := context.Background()
 
 	// List of private keys to add to the key bag
-	privateKeys := []string{"key_A", "key_B", "key_C"} // Replace with your actual private keys
+	privateKeys := []string{"A", "B", "C"} // Replace with your actual private keys
 
 	// Set up the key bag and signer
 	keyBag := &vex.KeyBag{}
@@ -25,16 +28,31 @@ func main() {
 	api.SetSigner(keyBag)
 
 	// List of accounts to claim rewards for
-	accounts := []string{"A", "B", "B"}
+	accounts := []string{"A", "B", "C"}
+
+	// Create a channel to listen for interrupt signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// Infinite loop to claim rewards periodically
-	for {
-		for _, account := range accounts {
-			claimReward(api, ctx, account) // Correctly call with three arguments
+	go func() {
+		for {
+			select {
+			case <-signalChan:
+				fmt.Println("Shutdown signal received. Exiting...")
+				os.Exit(0)
+			default:
+				for _, account := range accounts {
+					claimReward(api, ctx, account)
+				}
+				fmt.Println("Waiting for 60 seconds before the next claim...")
+				time.Sleep(60 * time.Second)
+			}
 		}
-		fmt.Println("Waiting for 60 seconds before the next claim...")
-		time.Sleep(60 * time.Second)
-	}
+	}()
+
+	// Block main thread to keep application running
+	select {}
 }
 
 // Function to claim rewards for block producers
@@ -89,4 +107,20 @@ func claimReward(api *vex.API, ctx context.Context, account string) { // Updated
 
 	// Print success message
 	fmt.Printf("Transaction [%s] submitted successfully for account: %s\n", response.Processed.ID, account)
+}
+// Save PID to a file
+func writePID(pidFile string) {
+	pid := os.Getpid()
+	err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", pid)), 0644)
+	if err != nil {
+		fmt.Printf("Error writing PID file: %v\n", err)
+	}
+}
+
+// Cleanup function to remove PID file
+func cleanup(pidFile string) {
+	err := os.Remove(pidFile)
+	if err != nil {
+		fmt.Printf("Error removing PID file: %v\n", err)
+	}
 }
